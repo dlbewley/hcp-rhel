@@ -1,6 +1,6 @@
 # Exploring use of HCP and RHEL worker nodes
 
-Use case is HCP with exclusively RHEL worker nodes.
+Exploring HCP and a use case of exclusively RHEL worker nodes.
 
 **Background**
 
@@ -19,7 +19,12 @@ hostedcontrolplanes   hcp,hcps     hypershift.openshift.io/v1beta1   true       
 nodepools             np,nps       hypershift.openshift.io/v1beta1   true         NodePool
 ```
 
-**HCP Platform / Provider Types**
+Diagrams
+
+* [Standalone Control Plane](img/standalone-cp.png)
+* [Hosted Control Plane](img/hosted-cp.png)
+
+**HostedCluster Platform / Provider Types**
 
 ```bash
 hypershift create cluster -h
@@ -37,7 +42,7 @@ Available Commands:
   ...
 ```
  
-These 3 platforms are in scope for evaluation
+These 3 platforms are of mosed interest for evaluation
 
  * [Agent][5] - Uses BMC to provision bare metal nodes
  * [None][4] - Leaves node creationg to user
@@ -45,18 +50,23 @@ These 3 platforms are in scope for evaluation
 
 Can none be used to form an exclusively RHEL worker node cluster?
 
-**Test Plan**
+**Tests**
 
-* [x] Deploy a Kubervirt HostedCluster
-* [ ] Add RHEL Workers to 
+Kubevirt
 
-* Deploy a [platform=None][4] hosted control plane, but what about an [Agent Cluster][5]?
-* Build a RHEL host
-* Use Ansible to join host to above control plane
+* [x] Deploy a platform=Kubervirt HostedCluster
+* [ ] [Add RHEL Workers][6] to Kubevirt cluster
+
+None
+
+* [ ] Deploy a [platform=None][4] HostedCluster
+* [ ] [Add RHEL Workers][6] to None cluster
+
+Agent
+
+* [ ] Deploy a [plaform=Agent][5] Hosted Cluster (_maybe_)
 
 
-<!-- ![img/standalone-cp.png](img/standalone-cp.png) -->
-![img/hosted-cp.png](img/hosted-cp.png)
 
 # Prereqs
 
@@ -212,9 +222,13 @@ example-fdwg4   84m   Running   10.129.4.96    hub-fpkcn-cnv-6r66k   True
 
 Success. See [screenshot](img/overview-screenshots.png)
 
+### Adding a RHEL Node
 ### Import to RHACM
 
 HostedCluster is not automatically imported into ACM, do so in the UI.
+
+## Deploying a None HostedCluster
+### Adding a RHEL Node
 
 # Questions
 
