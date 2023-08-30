@@ -4,10 +4,22 @@ Use case is HCP with exclusively RHEL worker nodes.
 
 **Background**
 
-* [HCP][1] is a feature of [MCE][2]
+[HCP][1] is a feature of [MCE][2] which is a component of RHACM for managing cluster lifecycle
 
+```bash
+oc api-resources --api-group=multicluster.openshift.io
+NAME                  SHORTNAMES   APIVERSION                     NAMESPACED   KIND
+multiclusterengines   mce          multicluster.openshift.io/v1   false        MultiClusterEngine
 
-**Types of HCP**
+oc api-resources --api-group=hypershift.openshift.io
+NAME                  SHORTNAMES   APIVERSION                        NAMESPACED   KIND
+awsendpointservices                hypershift.openshift.io/v1beta1   true         AWSEndpointService
+hostedclusters        hc,hcs       hypershift.openshift.io/v1beta1   true         HostedCluster
+hostedcontrolplanes   hcp,hcps     hypershift.openshift.io/v1beta1   true         HostedControlPlane
+nodepools             np,nps       hypershift.openshift.io/v1beta1   true         NodePool
+```
+
+**HCP Platform / Provider Types**
 
 ```bash
 hypershift create cluster -h
@@ -24,31 +36,29 @@ Available Commands:
   powervs     Creates basic functional HostedCluster resources on PowerVS PowerVS
   ...
 ```
+ 
+These 3 platforms are in scope for evaluation
+
+ * [Agent][5] - Uses BMC to provision bare metal nodes
+ * [None][4] - Leaves node creationg to user
+ * Kubevirt - Uses OpenShift virtualization to provision nodes
 
 Can none be used to form an exclusively RHEL worker node cluster?
 
-```bash
-oc api-resources --api-group=multicluster.openshift.io
-NAME                  SHORTNAMES   APIVERSION                     NAMESPACED   KIND
-multiclusterengines   mce          multicluster.openshift.io/v1   false        MultiClusterEngine
-
-oc api-resources --api-group=hypershift.openshift.io
-NAME                  SHORTNAMES   APIVERSION                        NAMESPACED   KIND
-awsendpointservices                hypershift.openshift.io/v1beta1   true         AWSEndpointService
-hostedclusters        hc,hcs       hypershift.openshift.io/v1beta1   true         HostedCluster
-hostedcontrolplanes   hcp,hcps     hypershift.openshift.io/v1beta1   true         HostedControlPlane
-nodepools             np,nps       hypershift.openshift.io/v1beta1   true         NodePool
-```
-
 **Test Plan**
 
-* Deploy a [platform=none][4] hosted control plane, but what about an [Agent Cluster][5]?
+* [x] Deploy a Kubervirt HostedCluster
+* [ ] Add RHEL Workers to 
+
+* Deploy a [platform=None][4] hosted control plane, but what about an [Agent Cluster][5]?
 * Build a RHEL host
 * Use Ansible to join host to above control plane
 
 
 <!-- ![img/standalone-cp.png](img/standalone-cp.png) -->
 ![img/hosted-cp.png](img/hosted-cp.png)
+
+# Prereqs
 
 ## Enable Hosted Control Plane Feature
 
@@ -109,7 +119,9 @@ l2advertisements                 metallb.io/v1beta1   true         L2Advertiseme
 metallbs                         metallb.io/v1beta1   true         MetalLB
 ```
 
-## Basic Functional Test First
+# Tests
+
+## Deploying a KubeVirt HostedCluster 
 
 * First test a kubevirt HCP cluster
 
@@ -198,17 +210,21 @@ example-dt69f   84m   Running   10.130.4.166   hub-fpkcn-cnv-2q786   True
 example-fdwg4   84m   Running   10.129.4.96    hub-fpkcn-cnv-6r66k   True
 ```
 
-Enable DNS for the HCP domain     consoleURL: <https://console-openshift-console.apps.example.apps.hub.lab.bewley.net>
+Success. See [screenshot](img/overview-screenshots.png)
 
 ### Import to RHACM
 
-HostedCluster is not automatically imported into ACM.
+HostedCluster is not automatically imported into ACM, do so in the UI.
 
-## Questions
+# Questions
 
-* What is roadmap for HCP? When is it GA?
+* What is roadmap for HCP? When is it GA? [FAQ][8]
 * How to upgrade HCP Clusters?
-** <https://docs.openshift.com/container-platform/4.13/hosted_control_planes/hcp-managing.html#updating-node-pools-for-hcp_hcp-managing> `oc -n NAMESPACE patch HC HCNAME --patch '{"spec":{"release":{"image": "example"}}}' --type=merge`
+** <https://docs.openshift.com/container-platform/4.13/hosted_control_planes/hcp-managing.html#updating-node-pools-for-hcp_hcp-managing> 
+
+```bash
+oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image": "ocp-pull-spec"}}}' --type=merge
+```
 
 # References
 
