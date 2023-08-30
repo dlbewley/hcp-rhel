@@ -1,0 +1,7 @@
+Spin up a RHEL node to test importing into a HostedCluster
+
+Apply NNCP, NAD, and spin up RHEL VM with custom cloud init.
+
+oc apply -k overlays/ocp-node
+
+_Note_ nmstate must be present for the NNCP resource.

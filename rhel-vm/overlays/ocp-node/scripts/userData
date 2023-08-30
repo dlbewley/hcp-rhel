@@ -1,0 +1,6 @@
+#cloud-config
+user: cloud-user
+password: fire-water-tofu
+chpasswd: { expire: False }
+
+# update me to satisfy OpenShift RHEL node deps
