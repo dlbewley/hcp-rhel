@@ -1,0 +1,67 @@
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  annotations:
+    cluster.open-cluster-management.io/hypershiftdeployment: clusters/example
+    cluster.open-cluster-management.io/managedcluster-name: example
+  finalizers:
+  - hypershift.openshift.io/finalizer
+  generation: 3
+  labels:
+    hypershift.openshift.io/auto-created-for-infra: ""
+  name: example
+  namespace: clusters
+spec:
+  autoscaling: {}
+  controllerAvailabilityPolicy: SingleReplica
+  dns:
+    baseDomain: apps.hub.lab.bewley.net
+  etcd:
+    managed:
+      storage:
+        persistentVolume:
+          size: 8Gi
+        type: PersistentVolume
+    managementType: Managed
+  fips: false
+  infraID: example-qdpzc
+  infrastructureAvailabilityPolicy: SingleReplica
+  issuerURL: https://kubernetes.default.svc
+  networking:
+    clusterNetwork:
+    - cidr: 10.132.0.0/14
+    networkType: OVNKubernetes
+    serviceNetwork:
+    - cidr: 172.31.0.0/16
+  olmCatalogPlacement: management
+  platform:
+    kubevirt:
+      baseDomainPassthrough: true
+    type: KubeVirt
+  pullSecret:
+    name: example-pull-secret
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.13.10-x86_64
+  secretEncryption:
+    aescbc:
+      activeKey:
+        name: example-etcd-encryption-key
+    type: aescbc
+  services:
+  - service: APIServer
+    servicePublishingStrategy:
+      type: LoadBalancer
+  - service: OAuthServer
+    servicePublishingStrategy:
+      type: Route
+  - service: Konnectivity
+    servicePublishingStrategy:
+      type: Route
+  - service: Ignition
+    servicePublishingStrategy:
+      type: Route
+  - service: OVNSbDb
+    servicePublishingStrategy:
+      type: Route
+  sshKey:
+    name: example-ssh-key

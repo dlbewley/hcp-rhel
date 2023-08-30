@@ -1,0 +1,41 @@
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  # annotations:
+  #   hypershift.openshift.io/nodePoolCurrentConfig: 53fc57a7
+  #   hypershift.openshift.io/nodePoolCurrentConfigVersion: 757d4618
+  finalizers:
+  - hypershift.openshift.io/finalizer
+  generation: 1
+  labels:
+    hypershift.openshift.io/auto-created-for-infra: ""
+  name: example
+  namespace: clusters
+  ownerReferences:
+  - apiVersion: hypershift.openshift.io/v1beta1
+    kind: HostedCluster
+    name: example
+spec:
+  clusterName: example
+  management:
+    autoRepair: false
+    replace:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      strategy: RollingUpdate
+    upgradeType: Replace
+  nodeDrainTimeout: 0s
+  platform:
+    kubevirt:
+      compute:
+        cores: 2
+        memory: 6Gi
+      rootVolume:
+        persistent:
+          size: 16Gi
+        type: Persistent
+    type: KubeVirt
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.13.10-x86_64
+  replicas: 2
