@@ -2,9 +2,11 @@
 
 Exploring HCP and a use case of exclusively RHEL worker nodes.
 
-**Background**
+## Background
 
-[HCP][1] is a feature of [MCE][2] which is a component of RHACM for managing cluster lifecycle
+### HCP Background
+
+[HCP][1] is a feature of [MCE][2] which is a component of RHACM for managing cluster lifecycle. RHACM depends on MCE but the inverse is not true.
 
 ```bash
 oc api-resources --api-group=multicluster.openshift.io
@@ -50,31 +52,41 @@ These 3 platforms are of mosed interest for evaluation
 
 Can none be used to form an exclusively RHEL worker node cluster?
 
-**Tests**
+### RHEL Worker Background
 
-Kubevirt
+[Requirements][6]
+
+* Removing a cluster node requires destroying the OS so you must use an exclusively dedicated machine
+* Swap memory is disabled
+* host must have OpenShift Container Platform subscription
+* Base OS: RHEL 8.6, 8.7, or 8.8 with "Minimal" installation option.
+* Min 1vCPU, 8GB RAM
+
+# Tests
+
+## [Kubevirt](#deploying-a-kubevirt-hostedcluster)
 
 * [x] Deploy a platform=Kubervirt HostedCluster
 * [ ] [Add RHEL Workers][6] to Kubevirt cluster
 
-None
+## None
 
 * [ ] Deploy a [platform=None][4] HostedCluster
 * [ ] [Add RHEL Workers][6] to None cluster
 
-Agent
+## Agent
 
 * [ ] Deploy a [plaform=Agent][5] Hosted Cluster (_maybe_)
 
 
 
-# Prereqs
+# Hosted Control Plane Prerequisites
 
 ## Enable Hosted Control Plane Feature
 
 * Deploy MultiClusterEngine Operator - Installing RHACM can accomplish this
 
-* Enable HyperShift Add-on to MultiClusterEngine
+* Enable HyperShift Add-on to MultiClusterEngine. This will likely be on by default around RHACM 2.9 release.
 
 ```bash
 # are these redundant? not sure.
@@ -143,12 +155,13 @@ export CPU="2"
 export WORKER_COUNT="2"
 
 #  use the --release-image flag to set up the hosted cluster with a specific OpenShift Container Platform release.
+# use the --base-domain flag avoid being in a subdomain of the hub cluster
 hypershift create cluster kubevirt \
---name $CLUSTER_NAME \
---node-pool-replicas=$WORKER_COUNT \
---pull-secret $PULL_SECRET_PATH \
---memory $MEM \
---cores $CPU
+  --name $CLUSTER_NAME \
+  --node-pool-replicas=$WORKER_COUNT \
+  --pull-secret $PULL_SECRET_PATH \
+  --memory $MEM \
+  --cores $CPU
 2023-08-29T13:27:46-07:00       INFO    Applied Kube resource   {"kind": "Namespace", "namespace": "", "name": "clusters"}
 2023-08-29T13:27:46-07:00       INFO    Applied Kube resource   {"kind": "Secret", "namespace": "clusters", "name": "example-pull-secret"}
 2023-08-29T13:27:46-07:00       INFO    Applied Kube resource   {"kind": "", "namespace": "clusters", "name": "example"}
@@ -223,6 +236,23 @@ example-fdwg4   84m   Running   10.129.4.96    hub-fpkcn-cnv-6r66k   True
 Success. See [screenshot](img/overview-screenshots.png)
 
 ### Adding a RHEL Node
+
+[Add a RHEL node][6] to example KubeVirt HostedCluster
+
+Deploy a VM. 
+
+```bash
+oc apply -k rhel-vm/overlays/ocp-node
+secret/cloudinitdisk-rhel-node created
+networkattachmentdefinition.k8s.cni.cncf.io/vlan-1924 created
+virtualmachine.kubevirt.io/rhel-node-1 created
+nodenetworkconfigurationpolicy.nmstate.io/ens224-v1924 unchanged
+```
+
+TODO 
+* mod eth0 to vlan-1924 NAD
+* mod cloud-init to cfg RHEL8
+
 ### Import to RHACM
 
 HostedCluster is not automatically imported into ACM, do so in the UI.
@@ -251,3 +281,6 @@ oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image":
 [6]: <https://docs.openshift.com/container-platform/4.13/machine_management/adding-rhel-compute.html> "Adopting RHEL Nodes"
 [7]: <https://docs.openshift.com/container-platform/4.13/updating/updating-cluster-rhel-compute.html> "Updating RHEL Nodes"
 [8]:  <https://docs.google.com/document/d/1cvvFShz3AZ24VAHZvcEZImmiqn3sQPpHBvIGvgMdhCo/edit#> "HCP FAQ"
+[9]: <https://docs.google.com/document/d/1H_hmY_r1dQjAv163OIWeAQpkaULOYHSNzWvEh7_TkpU/edit#heading=h.38yju8gvhgz4a> "MCE FAQ"
+[10]: <https://issues.redhat.com/browse/OCPSTRAT-9> "Jira tracking Self Managed HCP"
+[11]: <https://pp.engineering.redhat.com/hypershift/overview/> "Engr HyperShift"
