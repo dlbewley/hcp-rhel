@@ -242,9 +242,9 @@ Success. See [screenshot](img/overview-screenshots.png)
 **TODO**
 * Mount kubeconfig via configmap
 
-The cloud-init [user data](rhel-vm/overlays/ocp-node/scripts/userData) will configure the RHEL node.
+* Deploying a RHEL compute node as [a VM](rhel-vm/overlays/ocp-node/kustomization.yaml)
 
-* Deploying a RHEL compute node as VM
+The cloud-init [user data](rhel-vm/overlays/ocp-node/scripts/userData) will configure the RHEL node.
 
 ```bash
 oc apply -k rhel-vm/overlays/ocp-node
