@@ -28,6 +28,15 @@ patches:
     - op: replace
       path: /spec/template/spec/volumes/1/cloudInitNoCloud
       value: {"secretRef":{"name":"cloudinitdisk-rhel-node"}}
+
+    - op: replace
+      path: /spec/template/spec/networks/0
+      value: {"name":"nic-vlan-1924","multus":{"networkName":"clusters/vlan-1924"}}
+
+    - op: replace
+      path: /spec/template/spec/domain/devices/interfaces/0
+      value: {"name": "nic-vlan-1924","bridge":{},"model":"virtio"}
+
     - op: replace
       path: /spec/running
       value: true
