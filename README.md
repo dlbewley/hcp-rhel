@@ -143,7 +143,7 @@ metallbs                         metallb.io/v1beta1   true         MetalLB
 
 # Tests
 
-## Deploying a KubeVirt HostedCluster 
+## Deploying a KubeVirt HostedCluster
 
 * First test a kubevirt HCP cluster
 
@@ -235,11 +235,16 @@ example-fdwg4   84m   Running   10.129.4.96    hub-fpkcn-cnv-6r66k   True
 
 Success. See [screenshot](img/overview-screenshots.png)
 
-### Adding a RHEL Node
+### Adding a RHEL Node to KubeVirt HostedCluster
 
-[Add a RHEL node][6] to example KubeVirt HostedCluster
+[Add a RHEL node][6] to example KubeVirt HostedCluster. For this test the playbook will be run from the RHEL node its self.
 
-Deploy a VM. 
+**TODO**
+* Mount kubeconfig via configmap
+
+The cloud-init [user data](rhel-vm/overlays/ocp-node/scripts/userData) will configure the RHEL node.
+
+* Deploying a RHEL compute node as VM
 
 ```bash
 oc apply -k rhel-vm/overlays/ocp-node
@@ -249,13 +254,57 @@ virtualmachine.kubevirt.io/rhel-node-1 created
 nodenetworkconfigurationpolicy.nmstate.io/ens224-v1924 unchanged
 ```
 
-TODO 
-* mod eth0 to vlan-1924 NAD
-* mod cloud-init to cfg RHEL8
+#### FAIL
 
-### Import to RHACM
+* First test while manually running the playbook to add node to HCP cluster failed due to lack of `machineconfigpool` API.
 
-HostedCluster is not automatically imported into ACM, do so in the UI.
+```
+[ansible@rhel-node-1 openshift-ansible]$ ansible-playbook -c local -i /home/ansible/inventory/hosts playbooks/scaleup.yml
+
+...
+TASK [openshift_node : Retrieve rendered-worker name] *********************************************************************************************************
+FAILED - RETRYING: [rhel-node-1.lab.bewley.net -> localhost]: Retrieve rendered-worker name (3 retries left).
+FAILED - RETRYING: [rhel-node-1.lab.bewley.net -> localhost]: Retrieve rendered-worker name (2 retries left).
+FAILED - RETRYING: [rhel-node-1.lab.bewley.net -> localhost]: Retrieve rendered-worker name (1 retries left).
+fatal: [rhel-node-1.lab.bewley.net -> localhost]: FAILED! => {"attempts": 3, "changed": false, "cmd": ["oc", "get", "machineconfigpool", "worker", "--kubeconfi
+g=/home/ansible/example-kubeconfig", "--output=jsonpath={.status.configuration.name}"], "delta": "0:00:00.521666", "end": "2023-08-31 12:00:21.349878", "msg":
+"non-zero return code", "rc": 1, "start": "2023-08-31 12:00:20.828212", "stderr": "error: the server doesn't have a resource type \"machineconfigpool\"", "stde
+rr_lines": ["error: the server doesn't have a resource type \"machineconfigpool\""], "stdout": "", "stdout_lines": []}
+
+[ansible@rhel-node-1 openshift-ansible]$ oc api-resources --api-group=machineconfiguration.openshift.io
+NAME   SHORTNAMES   APIVERSION   NAMESPACED   KIND
+[ansible@rhel-node-1 openshift-ansible]$
+```
+
+There is no machine config operator present.
+
+```
+[ansible@rhel-node-1 openshift-ansible]$ oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+console                                    4.13.10   True        False         False      22h
+csi-snapshot-controller                    4.13.10   True        False         False      41h
+dns                                        4.13.10   True        False         False      39h
+image-registry                             4.13.10   True        False         False      39h
+ingress                                    4.13.10   True        False         False      22h
+insights                                   4.13.10   True        False         False      40h
+kube-apiserver                             4.13.10   True        False         False      41h
+kube-controller-manager                    4.13.10   True        False         False      41h
+kube-scheduler                             4.13.10   True        False         False      41h
+kube-storage-version-migrator              4.13.10   True        False         False      40h
+monitoring                                 4.13.10   True        False         False      39h
+network                                    4.13.10   True        False         False      40h
+node-tuning                                4.13.10   True        False         False      40h
+openshift-apiserver                        4.13.10   True        False         False      41h
+openshift-controller-manager               4.13.10   True        False         False      41h
+openshift-samples                          4.13.10   True        False         False      39h
+operator-lifecycle-manager                 4.13.10   True        False         False      41h
+operator-lifecycle-manager-catalog         4.13.10   True        False         False      41h
+operator-lifecycle-manager-packageserver   4.13.10   True        False         False      41h
+service-ca                                 4.13.10   True        False         False      40h
+storage                                    4.13.10   True        False         False      41h
+```
+
+* Approve CSRs for new node
 
 ## Deploying a None HostedCluster
 ### Adding a RHEL Node
