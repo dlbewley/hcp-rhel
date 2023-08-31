@@ -62,22 +62,24 @@ Can none be used to form an exclusively RHEL worker node cluster?
 * Base OS: RHEL 8.6, 8.7, or 8.8 with "Minimal" installation option.
 * Min 1vCPU, 8GB RAM
 
-# Tests
+# Test Cases
 
 ## [Kubevirt](#deploying-a-kubevirt-hostedcluster)
 
 * [x] Deploy a platform=Kubervirt HostedCluster
-* [ ] [Add RHEL Workers][6] to Kubevirt cluster
+  * Success
+* [ ] Add a RHEL Worker to `Kubevirt` cluster
+  * **Failure** - Missing Machine Config Operator on HostedCluster
 
-## None
+## [None](#deploying-a-none-hostedcluster)
 
 * [ ] Deploy a [platform=None][4] HostedCluster
-* [ ] [Add RHEL Workers][6] to None cluster
+  * TBD
+* [ ] Add RHEL Workers to `None` cluster
+  * TBD
 
 ## Agent
-
-* [ ] Deploy a [plaform=Agent][5] Hosted Cluster (_maybe_)
-
+* Might not test this...
 
 
 # Hosted Control Plane Prerequisites
@@ -141,7 +143,7 @@ l2advertisements                 metallb.io/v1beta1   true         L2Advertiseme
 metallbs                         metallb.io/v1beta1   true         MetalLB
 ```
 
-# Tests
+# Test Runs
 
 ## Deploying a KubeVirt HostedCluster
 
@@ -304,7 +306,7 @@ service-ca                                 4.13.10   True        False         F
 storage                                    4.13.10   True        False         False      41h
 ```
 
-* Approve CSRs for new node
+* After a successful run, approve CSRs for the new node
 
 ## Deploying a None HostedCluster
 ### Adding a RHEL Node
