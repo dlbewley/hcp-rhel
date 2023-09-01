@@ -19,6 +19,15 @@ awsendpointservices                hypershift.openshift.io/v1beta1   true       
 hostedclusters        hc,hcs       hypershift.openshift.io/v1beta1   true         HostedCluster
 hostedcontrolplanes   hcp,hcps     hypershift.openshift.io/v1beta1   true         HostedControlPlane
 nodepools             np,nps       hypershift.openshift.io/v1beta1   true         NodePool
+
+oc api-resources --api-group=agent-install.openshift.io
+NAME                            SHORTNAMES   APIVERSION                           NAMESPACED   KIND
+agentclassifications                         agent-install.openshift.io/v1beta1   true         AgentClassification
+agents                                       agent-install.openshift.io/v1beta1   true         Agent
+agentserviceconfigs                          agent-install.openshift.io/v1beta1   false        AgentServiceConfig
+hypershiftagentserviceconfigs   hasc         agent-install.openshift.io/v1beta1   true         HypershiftAgentServiceConfig
+infraenvs                                    agent-install.openshift.io/v1beta1   true         InfraEnv
+nmstateconfigs                               agent-install.openshift.io/v1beta1   true         NMStateConfig
 ```
 
 Diagrams
@@ -44,7 +53,7 @@ Available Commands:
   ...
 ```
  
-These 3 platforms are of mosed interest for evaluation
+These 3 platforms are of most interest for evaluation:
 
  * [Agent][5] - Uses BMC to provision bare metal nodes
  * [None][4] - Leaves node creationg to user
@@ -66,20 +75,20 @@ Can none be used to form an exclusively RHEL worker node cluster?
 
 ## [Kubevirt](#deploying-a-kubevirt-hostedcluster)
 
-* [x] Deploy a platform=Kubervirt HostedCluster
+* [x] Deploy a [platform=Kubervirt][13] HostedCluster
   * Success
-* [ ] Add a RHEL Worker to `Kubevirt` cluster
-  * **Failure** - Missing Machine Config Operator on HostedCluster
+* [-] Add a RHEL Worker to `Kubevirt` cluster
+  * **Failure** - Not possible, due to lack of Machine Config Operator on HostedClusters
 
 ## [None](#deploying-a-none-hostedcluster)
 
-* [ ] Deploy a [platform=None][4] HostedCluster
+* [-] Deploy a [platform=None][4] HostedCluster
   * TBD
-* [ ] Add RHEL Workers to `None` cluster
+* [-] Add RHEL Workers to `None` cluster
   * TBD
 
 ## Agent
-* Might not test this...
+* [-] Might not test this...
 
 
 # Hosted Control Plane Prerequisites
@@ -220,6 +229,9 @@ redhat-operators-catalog-769fc8f758-rk86z             1/1     Running   0       
 hypershift create kubeconfig --name $CLUSTER_NAME > $CLUSTER_NAME-kubeconfig
 ```
 
+oc extract -n ${CLUSTERS_NAMESPACE} secret/${HOSTED}-admin-kubeconfig --to=- > ${HOSTED}-kubeconfig
+oc get clusterversion --kubeconfig=${HOSTED}-kubeconfig
+
 ```bash
 oc get hostedcluster/$CLUSTER_NAME -n clusters
 NAME      VERSION   KUBECONFIG                 PROGRESS    AVAILABLE   PROGRESSING   MESSAGE
@@ -241,8 +253,6 @@ Success. See [screenshot](img/overview-screenshots.png)
 
 [Add a RHEL node][6] to example KubeVirt HostedCluster. For this test the playbook will be run from the RHEL node its self.
 
-**TODO**
-* Mount kubeconfig via configmap
 
 * Deploying a RHEL compute node as [a VM](rhel-vm/overlays/ocp-node/kustomization.yaml)
 
@@ -256,9 +266,11 @@ virtualmachine.kubevirt.io/rhel-node-1 created
 nodenetworkconfigurationpolicy.nmstate.io/ens224-v1924 unchanged
 ```
 
-#### FAIL
+#### FAIL This is not supported
 
-* First test while manually running the playbook to add node to HCP cluster failed due to lack of `machineconfigpool` API.
+* Running the playbook to [add a RHEL node][6] to HCP cluster failed due to lack of `machineconfigpool` API.
+
+_The Machine Config Operator is not present in the control plane of a HostedCluster, so HyperShift and RHEL nodes are incompatible._
 
 ```
 [ansible@rhel-node-1 openshift-ansible]$ ansible-playbook -c local -i /home/ansible/inventory/hosts playbooks/scaleup.yml
@@ -277,6 +289,8 @@ rr_lines": ["error: the server doesn't have a resource type \"machineconfigpool\
 NAME   SHORTNAMES   APIVERSION   NAMESPACED   KIND
 [ansible@rhel-node-1 openshift-ansible]$
 ```
+
+Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
 
 There is no machine config operator present.
 
@@ -306,16 +320,13 @@ service-ca                                 4.13.10   True        False         F
 storage                                    4.13.10   True        False         False      41h
 ```
 
-* After a successful run, approve CSRs for the new node
-
 ## Deploying a None HostedCluster
 ### Adding a RHEL Node
 
 # Questions
 
 * What is roadmap for HCP? When is it GA? [FAQ][8]
-* How to upgrade HCP Clusters?
-** <https://docs.openshift.com/container-platform/4.13/hosted_control_planes/hcp-managing.html#updating-node-pools-for-hcp_hcp-managing> 
+* How to [upgrade HCP Clusters][12]?
 
 ```bash
 oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image": "ocp-pull-spec"}}}' --type=merge
@@ -335,3 +346,5 @@ oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image":
 [9]: <https://docs.google.com/document/d/1H_hmY_r1dQjAv163OIWeAQpkaULOYHSNzWvEh7_TkpU/edit#heading=h.38yju8gvhgz4a> "MCE FAQ"
 [10]: <https://issues.redhat.com/browse/OCPSTRAT-9> "Jira tracking Self Managed HCP"
 [11]: <https://pp.engineering.redhat.com/hypershift/overview/> "Engr HyperShift"
+[12]: <https://docs.openshift.com/container-platform/4.13/hosted_control_planes/hcp-managing.html>
+[13]: <https://hypershift-docs.netlify.app/how-to/kubevirt/create-kubevirt-cluster/>
