@@ -9,7 +9,7 @@ resources:
 components:
   - ../../components/network
 
-# the inline patch will not learn of the random suffix, so disable it :(
+# the inline json patch can not learn of the random suffix
 generatorOptions:
   disableNameSuffixHash: true
 
@@ -26,6 +26,10 @@ patches:
     version: v1
   patch: |-
     - op: replace
+      path: /spec/template/spec/domain/cpu/sockets
+      value: 1
+
+    - op: replace
       path: /spec/template/spec/volumes/1/cloudInitNoCloud
       value: {"secretRef":{"name":"cloudinitdisk-rhel-node"}}
 
@@ -37,7 +41,7 @@ patches:
       path: /spec/template/spec/domain/devices/disks/-
       value: {"name":"admin-kubeconfig","serial": "admin-kubeconfig","disk":{"bus":"virtio"}}
 
-    # note namespace in net-attach-def reference
+    # note namespace in net-attach-def multus reference
     - op: replace
       path: /spec/template/spec/networks/0
       value: {"name":"nic-vlan-1924","multus":{"networkName":"clusters-example/vlan-1924"}}
