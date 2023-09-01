@@ -224,14 +224,6 @@ redhat-marketplace-catalog-54d4cc44c9-tz5xt           1/1     Running   0       
 redhat-operators-catalog-769fc8f758-rk86z             1/1     Running   0          4m36s
 ```
 
-
-```bash
-hypershift create kubeconfig --name $CLUSTER_NAME > $CLUSTER_NAME-kubeconfig
-```
-
-oc extract -n ${CLUSTERS_NAMESPACE} secret/${HOSTED}-admin-kubeconfig --to=- > ${HOSTED}-kubeconfig
-oc get clusterversion --kubeconfig=${HOSTED}-kubeconfig
-
 ```bash
 oc get hostedcluster/$CLUSTER_NAME -n clusters
 NAME      VERSION   KUBECONFIG                 PROGRESS    AVAILABLE   PROGRESSING   MESSAGE
@@ -247,7 +239,19 @@ example-dt69f   84m   Running   10.130.4.166   hub-fpkcn-cnv-2q786   True
 example-fdwg4   84m   Running   10.129.4.96    hub-fpkcn-cnv-6r66k   True
 ```
 
-Success. See [screenshot](img/overview-screenshots.png)
+**Success.** See [screenshot](img/overview-screenshots.png)
+
+* Obtain credentials to talk to hosted control plane
+
+```bash
+hypershift create kubeconfig --name $CLUSTER_NAME > $CLUSTER_NAME-kubeconfig
+# or
+oc extract -n clusters secret/${CLUSTER_NAME}-admin-kubeconfig --to=- > ${CLUSTER_NAME}-kubeconfig
+# or
+oc extract -n clusters-${CLUSTER_NAME} secret/admin-kubeconfig --to=- > ${CLUSTER_NAME}-kubeconfig
+
+oc get clusterversion --kubeconfig=${CLUSTER_NAME}-kubeconfig
+```
 
 ### Adding a RHEL Node to KubeVirt HostedCluster
 
@@ -325,7 +329,6 @@ storage                                    4.13.10   True        False         F
 
 # Questions
 
-* What is roadmap for HCP? When is it GA? [FAQ][8]
 * How to [upgrade HCP Clusters][12]?
 
 ```bash
@@ -333,7 +336,6 @@ oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image":
 ```
 
 # References
-
 
 [1]: <https://docs.openshift.com/container-platform/4.13/architecture/mce-overview-ocp.html>
 [2]: <https://docs.openshift.com/container-platform/4.13/architecture/control-plane.html>
