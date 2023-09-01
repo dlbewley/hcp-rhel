@@ -1,7 +1,4 @@
 #cloud-config
-#user: cloud-user
-#password: fire-water-tofu
-chpasswd: { expire: False }
 users:
   - name: cloud-user
     lock_passwd: false
@@ -20,6 +17,8 @@ users:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcYGv4QhrNhDB9ahXEp2x6kn9YZ2RV5GEXcRRYvk4yLpFidvSFJxkE3AonLuOgi7WBVwMofCCWbHDEgBIWNv6RzR41gKQYI+ZgcT5bSZ9ZFhkkgBvTE66q0XyFXYeON+QV1Woxb7FDDmkvpMi9Sp32EMLOaSQwgnWCsI00zmUgM4UYy66UatWqSRaPtLe8ES2IqA/WUcRfxexcFjtS6jsn2R3Xyz+w9IpexWMhTjWmKpH97Ps8Sj61pCgGgMkkvuBDWBhnVy58Hf0tNg2YZnILCUdh0vVZ1LWPpsno2HB+gBzNhJZznSC5x+emUKtpQwOzrdFn51h1ZCEQDAmyZ+Vb acm@bunny 
 
 rh_subscription:
+  org: ########
+  activation-key: EXAMPLE_KEY
   enable-repo:
     - 'rhel-8-for-x86_64-baseos-rpms'
     - 'rhel-8-for-x86_64-appstream-rpms'
@@ -34,17 +33,17 @@ packages:
 write_files:
   - path: /home/ansible/inventory/hosts
     content: |
+      # <https://docs.openshift.com/container-platform/latest/machine_management/adding-rhel-compute.html
       [all:vars]
-      # ansible_user=root
       ansible_become=True
-      # need to provide this via configmap...
-      openshift_kubeconfig_path="/home/ansible/example-kubeconfig"
+      openshift_kubeconfig_path="/home/ansible/cluster/kubeconfig"
       [new_workers]
       rhel-node-1.lab.bewley.net
 
+mounts:
+  - [ /dev/disk/by-id/virtio-admin-kubeconfig, /home/ansible/cluster, iso9660, 'defaults,noexec' ]
+
 runcmd:
-  # - 'curl -sLO https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-install-linux.tar.gz'
-  # - 'tar -C /usr/local/bin -xvzf openshift-install-linux.tar.gz, openshift-install'
-  # - 'rm openshift-install-linux.tar.gz'
+  - 'mkdir /home/ansible/cluster'
   - 'cd /usr/share/ansible/openshift-ansible'
   - 'ansible-playbook -c local -i /home/ansible/inventory/hosts playbooks/scaleup.yml'
