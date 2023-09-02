@@ -364,9 +364,11 @@ That was because I was using RHEL8 per [the docs][6] however OCP 4.13 is based o
 
 **TODO** File docs bug.
 
-* Retry with RHEL 9
+* Workaround: Update repo names in [userData](rhel-vm/overlays/ocp-node/scripts/userData) 
 
-* Failure of playbook which hints at a failure to update the playbook to support RHEL 9.
+* Retry with above workaround.
+
+* **Failure** of playbook which hints at a failure to update the playbook to support RHEL 9.
 
 ```
 TASK [openshift_node : Install openshift packages] *****************************
@@ -375,7 +377,8 @@ fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"msg": "The task includes an op
 
 * Yep. No entry for 9 here: <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L78-L87>
 
-This patch works around above:
+* **Workaround** This patch works around above:
+
 ```diff
 --- openshift-ansible/roles/openshift_node/defaults/main.yml.orig       2023-07-14 03:07:17.000000000 -0400
 +++ openshift-ansible/roles/openshift_node/defaults/main.yml    2023-09-01 20:06:53.986175752 -0400
@@ -391,7 +394,9 @@ This patch works around above:
 
 **TODO** File playbook bug.
 
-* Failed to download the machineconfig. Not sure why it used api-int instead of api.
+* Retry with above workaround.
+
+* **Failed** to download the machineconfig. Not sure why it used api-int instead of api. TBD
 
 ```
 
@@ -401,7 +406,7 @@ FAILED - RETRYING: [rhel-node-1.lab.bewley.net]: Fetch bootstrap ignition file l
 fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"attempts": 60, "changed": false, "elapsed": 0, "msg": "Status code was -1 and not [200]: Request failed: <urlopen error [Errno -2] Name or service not known>", "redirected": false, "status": -1, "url": "https://api-int.hub.lab.bewley.net:22623/config/worker"}
 ```
 
-**FAIL** Need to investigate ignition fetching from api-int which is not resolvable.
+Need to investigate ignition fetching from api-int which is not resolvable.
 
   * Task is here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/tasks/config.yml#L70-L83>
   * Vars are here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L6-L10>
