@@ -3,10 +3,8 @@ kind: Kustomization
 
 namespace: clusters-example
 
-resources:
-  - ../../base
-
 components:
+  - ../../components/rhel8
   - ../../components/network
 
 # the inline json patch can not learn of the random suffix
