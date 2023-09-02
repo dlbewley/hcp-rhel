@@ -408,6 +408,8 @@ FAILED - RETRYING: [rhel-node-1.lab.bewley.net]: Fetch bootstrap ignition file l
 fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"attempts": 60, "changed": false, "elapsed": 0, "msg": "Status code was -1 and not [200]: Request failed: <urlopen error [Errno -2] Name or service not known>", "redirected": false, "status": -1, "url": "https://api-int.hub.lab.bewley.net:22623/config/worker"}
 ```
 
+Need to investigate ignition fetching from api-int which is not resolvable.
+
   * Task is here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/tasks/config.yml#L70-L83>
   * Vars are here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L6-L10>
 
