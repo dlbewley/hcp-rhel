@@ -644,7 +644,6 @@ Maybe failure due to mixing platform=vsphere and a non-vmware guest?
 
 Result: Not going to pursue this any further at this time.
 
-
 # References
 
 [1]: <https://docs.openshift.com/container-platform/4.13/architecture/mce-overview-ocp.html>
