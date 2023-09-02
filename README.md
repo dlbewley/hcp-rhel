@@ -73,23 +73,40 @@ Can none be used to form an exclusively RHEL worker node cluster?
 
 # Test Cases
 
-## [Kubevirt](#deploying-a-kubevirt-hostedcluster)
+## Kubevirt HCP
+
+[Results]](#deploying-a-kubevirt-hostedcluster)
 
 * [x] Deploy a [platform=Kubervirt][13] HostedCluster
   * Success
-* [-] Add a RHEL Worker to `Kubevirt` cluster
+* [-] Add a [RHEL VM](rhel-vm/overlays/hcp-node) to `Kubevirt` cluster
   * **Failure** - Not possible, due to lack of Machine Config Operator on HostedClusters
 
-## [None](#deploying-a-none-hostedcluster)
+## None HCP
+
+* [x] Skipping this test
+
+[Results](#deploying-a-none-hostedcluster)
 
 * [-] Deploy a [platform=None][4] HostedCluster
   * TBD
-* [-] Add RHEL Workers to `None` cluster
+* [-] Add [RHEL VM](rhel-vm/overlays/hcp-node) Worker to `None` cluster
   * TBD
 
-## Agent
-* [-] Might not test this...
+## Agent HCP
 
+* [x] Skipping this test
+
+## Standalone Control Plane OCP
+
+[Results](#test-adding-rhel-node-to-openshift-cluster)
+
+* [x] Deploy a OCP 4.13 platform=vSphere cluster
+* [x] Deploy a [RHEL9 VM](rhel-vm/overlays/ocp-node)
+* [ ] Add as worker to OCP
+  * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `crio-tools` and more importantly does not match the cluster OS.
+  * **Workaround** The playbook does not account for RHEL9. Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
+  * **Failure** Bootstrap ignition attempts to fetch from api-int which is not resolvable.
 
 # Hosted Control Plane Prerequisites
 
@@ -258,12 +275,12 @@ oc get clusterversion --kubeconfig=${CLUSTER_NAME}-kubeconfig
 [Add a RHEL node][6] to example KubeVirt HostedCluster. For this test the playbook will be run from the RHEL node its self.
 
 
-* Deploying a RHEL compute node as [a VM](rhel-vm/overlays/ocp-node/kustomization.yaml)
+* Deploying a RHEL compute node as [a VM](rhel-vm/overlays/hcp-node/kustomization.yaml)
 
-The cloud-init [user data](rhel-vm/overlays/ocp-node/scripts/userData) will configure the RHEL node.
+The cloud-init [user data](rhel-vm/overlays/hcp-node/scripts/userData) will configure the RHEL node.
 
 ```bash
-oc apply -k rhel-vm/overlays/ocp-node
+oc apply -k rhel-vm/overlays/hcp-node
 secret/cloudinitdisk-rhel-node created
 networkattachmentdefinition.k8s.cni.cncf.io/vlan-1924 created
 virtualmachine.kubevirt.io/rhel-node-1 created
@@ -334,6 +351,61 @@ storage                                    4.13.10   True        False         F
 ```bash
 oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image": "ocp-pull-spec"}}}' --type=merge
 ```
+
+# Test adding RHEL Node to OpenShift Cluster
+
+* Playbook failed
+
+```
+No match for argument: cri-tools
+Error: Unable to find a match: cri-tools
+```
+That was because I was using RHEL8 per [the docs][6] however OCP 4.13 is based on RHEL 9.2.
+
+**TODO** File docs bug.
+
+* Retry with RHEL 9
+
+* Failure of playbook which hints at a failure to update the playbook to support RHEL 9.
+
+```
+TASK [openshift_node : Install openshift packages] *****************************
+fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"msg": "The task includes an option with an undefined variable. The error was: {{ (openshift_node_packages + openshift_node_support_packages) | join(',') }}: {{ openshift_node_support_packages_base + openshift_node_support_packages_by_os_major_version[ansible_distribution_major_version] + openshift_node_support_packages_by_arch[ansible_architecture] }}: 'dict object' has no attribute '9'. 'dict object' has no attribute '9'. {{ openshift_node_support_packages_base + openshift_node_support_packages_by_os_major_version[ansible_distribution_major_version] + openshift_node_support_packages_by_arch[ansible_architecture] }}: 'dict object' has no attribute '9'. 'dict object' has no attribute '9'. {{ (openshift_node_packages + openshift_node_support_packages) | join(',') }}: {{ openshift_node_support_packages_base + openshift_node_support_packages_by_os_major_version[ansible_distribution_major_version] + openshift_node_support_packages_by_arch[ansible_architecture] }}: 'dict object' has no attribute '9'. 'dict object' has no attribute '9'. {{ openshift_node_support_packages_base + openshift_node_support_packages_by_os_major_version[ansible_distribution_major_version] + openshift_node_support_packages_by_arch[ansible_architecture] }}: 'dict object' has no attribute '9'. 'dict object' has no attribute '9'\n\nThe error appears to be in '/usr/share/ansible/openshift-ansible/roles/openshift_node/tasks/install.yml': line 91, column 5, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n- block:\n  - name: Install openshift packages\n    ^ here\n"}
+```
+
+* Yep. No entry for 9 here: <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L78-L87>
+
+This patch works around above:
+```diff
+--- openshift-ansible/roles/openshift_node/defaults/main.yml.orig       2023-07-14 03:07:17.000000000 -0400
++++ openshift-ansible/roles/openshift_node/defaults/main.yml    2023-09-01 20:06:53.986175752 -0400
+@@ -85,6 +85,7 @@
+   "8":
+     - openvswitch2.17
+     - policycoreutils-python-utils
++  "9": []
+
+ openshift_conflict_packages:
+   - openvswitch
+```
+
+**TODO** File playbook bug.
+
+* Failed to download the machineconfig. Not sure why it used api-int instead of api.
+
+```
+
+TASK [openshift_node : Fetch bootstrap ignition file locally] **************************************************************************************
+FAILED - RETRYING: [rhel-node-1.lab.bewley.net]: Fetch bootstrap ignition file locally (60 retries left).
+...
+fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"attempts": 60, "changed": false, "elapsed": 0, "msg": "Status code was -1 and not [200]: Request failed: <urlopen error [Errno -2] Name or service not known>", "redirected": false, "status": -1, "url": "https://api-int.hub.lab.bewley.net:22623/config/worker"}
+```
+
+**FAIL** Need to investigate ignition fetching from api-int which is not resolvable.
+
+  * Task is here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/tasks/config.yml#L70-L83>
+  * Vars are here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L6-L10>
+
 
 # References
 
