@@ -470,7 +470,7 @@ TASK [openshift_node : Apply ignition manifest] ********************************
    - openvswitch
 ```
 
-* Rerun with above workaround. 
+* Soft **FAIL** Rerun with above workaround. Mostly worked but the playbook reboots the node. That failed since it was run from localhost.
 
 ```
 [ansible@rhel-node-1 openshift-ansible]$ cd /usr/share/ansible/openshift-ansible
@@ -499,7 +499,148 @@ rhel-node-1.lab.bewley.net : ok=47   changed=20   unreachable=0    failed=1    s
  14:38:01 up 3 days, 19:43,  1 user,  load average: 2.67, 1.40, 0.71
 ```
 
-**TODO** Running on Localhost may not actually work. Investigate above. TBD
+
+* **Workaround** Rebooted host by hand and did not re-run playbook nor check for any missing subsequent tasks.
+
+Manually approved 3 CSRs
+
+```
+ oc get csr
+NAME        AGE    SIGNERNAME                                    REQUESTOR                                                                   REQUESTEDDURATION   CONDITION
+csr-6qgqt   4m5s   kubernetes.io/kube-apiserver-client-kubelet   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   <none>              Approved,Issued
+csr-lv56x   19m    kubernetes.io/kube-apiserver-client-kubelet   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   <none>              Approved,Issued
+csr-qf8ks   22s    kubernetes.io/kubelet-serving                 system:node:rhel-node-1                                                     <none>              Pending
+```
+
+After approving those, the node shows up as Not Ready and journal complains about networking problem for a few minutes until finally becoming Ready.
+
+Success in that now the node is Ready, but failure in that it is not fully schedullable
+
+```
+$ oc get node rhel-node-1 -o wide
+NAME          STATUS   ROLES    AGE   VERSION           INTERNAL-IP     EXTERNAL-IP   OS-IMAGE                              KERNEL-VERSION                 CONTAINER-RUNTIME
+rhel-node-1   Ready    worker   36m   v1.26.7+0ef5eae   192.168.4.191   <none>        Red Hat Enterprise Linux 9.2 (Plow)   5.14.0-284.28.1.el9_2.x86_64   cri-o://1.26.4-3.rhaos4.13.git615a02c.el9
+
+$ oc get nodes -o custom-columns="NODE:.metadata.name,OS-IMAGE:.status.nodeInfo.osImage,IP:.status.addresses[0]"
+NODE                       OS-IMAGE                                                       IP
+hub-fpkcn-cnv-2q786        Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.103 type:InternalIP]
+hub-fpkcn-cnv-6r66k        Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.128 type:InternalIP]
+hub-fpkcn-cnv-f9gcp        Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.196 type:InternalIP]
+hub-fpkcn-cnv-qb67t        Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.137 type:InternalIP]
+hub-fpkcn-master-0         Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.195 type:InternalIP]
+hub-fpkcn-master-1         Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.138 type:InternalIP]
+hub-fpkcn-master-2         Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.182 type:InternalIP]
+hub-fpkcn-store-1-s8cz5    Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.197 type:InternalIP]
+hub-fpkcn-store-2-n5vvm    Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.193 type:InternalIP]
+hub-fpkcn-store-3-7hbz8    Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.39 type:InternalIP]
+hub-fpkcn-worker-0-nrc9w   Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.47 type:InternalIP]
+hub-fpkcn-worker-0-zkntn   Red Hat Enterprise Linux CoreOS 413.92.202308091852-0 (Plow)   map[address:192.168.4.180 type:InternalIP]
+rhel-node-1                Red Hat Enterprise Linux 9.2 (Plow)                            map[address:192.168.4.191 type:InternalIP]
+
+$ oc get vmis -n ocp-rhel -o wide
+NAME          AGE     PHASE     IP              NODENAME              READY   LIVE-MIGRATABLE   PAUSED
+rhel-node-1   3d21h   Running   192.168.4.191   hub-fpkcn-cnv-qb67t   True    True
+
+$ oc get pods -n ocp-rhel -o wide
+NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE                  NOMINATED NODE   READINESS GATES
+virt-launcher-rhel-node-1-npfn8   1/1     Running   0          3d21h   10.131.5.99   hub-fpkcn-cnv-qb67t   <none>           1/1
+```
+
+**FAIL** Even though node is status Ready it is tainted to reject workloads. TBD
+
+```
+oc describe node rhel-node-1
+Name:               rhel-node-1
+Roles:              worker
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=rhel-node-1
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/worker=
+                    node.openshift.io/os_id=rhel
+Annotations:        alpha.kubernetes.io/provided-node-ip: 192.168.4.191
+                    k8s.ovn.org/host-addresses: ["192.168.4.191"]
+                    k8s.ovn.org/l3-gateway-config:
+                      {"default":{"mode":"shared","interface-id":"br-ex_rhel-node-1","mac-address":"02:f8:4a:00:00:20","ip-addresses":["192.168.4.191/24"],"ip-a...
+                    k8s.ovn.org/node-chassis-id: ac10dd01-fee1-4792-ae81-c92fe4afdc30
+                    k8s.ovn.org/node-gateway-router-lrp-ifaddr: {"ipv4":"100.64.0.14/16"}
+                    k8s.ovn.org/node-mgmt-port-mac-address: d2:6d:e0:30:4e:a2
+                    k8s.ovn.org/node-primary-ifaddr: {"ipv4":"192.168.4.191/24"}
+                    k8s.ovn.org/node-subnets: {"default":["10.128.6.0/23"]}
+                    machineconfiguration.openshift.io/controlPlaneTopology: HighlyAvailable
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Tue, 05 Sep 2023 13:15:20 -0700
+Taints:             node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                    UpdateInProgress:PreferNoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  rhel-node-1
+  AcquireTime:     <unset>
+  RenewTime:       Tue, 05 Sep 2023 13:42:52 -0700
+Conditions:
+  Type             Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----             ------  -----------------                 ------------------                ------                       -------
+  MemoryPressure   False   Tue, 05 Sep 2023 13:42:40 -0700   Tue, 05 Sep 2023 13:15:20 -0700   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure     False   Tue, 05 Sep 2023 13:42:40 -0700   Tue, 05 Sep 2023 13:15:20 -0700   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure      False   Tue, 05 Sep 2023 13:42:40 -0700   Tue, 05 Sep 2023 13:15:20 -0700   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready            True    Tue, 05 Sep 2023 13:42:40 -0700   Tue, 05 Sep 2023 13:19:59 -0700   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  192.168.4.191
+  Hostname:    rhel-node-1
+Capacity:
+  cpu:                1
+  ephemeral-storage:  30728172Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7841692Ki
+  pods:               250
+Allocatable:
+  cpu:                500m
+  ephemeral-storage:  27245341445
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             6690716Ki
+  pods:               250
+System Info:
+  Machine ID:                 65bdb56817b1596fb2526befa9e1a29a
+  System UUID:                65bdb568-17b1-596f-b252-6befa9e1a29a
+  Boot ID:                    8d39b128-fc04-4fe1-9107-72775385010c
+  Kernel Version:             5.14.0-284.28.1.el9_2.x86_64
+  OS Image:                   Red Hat Enterprise Linux 9.2 (Plow)
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  cri-o://1.26.4-3.rhaos4.13.git615a02c.el9
+  Kubelet Version:            v1.26.7+0ef5eae
+  Kube-Proxy Version:         v1.26.7+0ef5eae
+Non-terminated Pods:          (7 in total)
+  Namespace                   Name                            CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                            ------------  ----------  ---------------  -------------  ---
+  openshift-cnv               bridge-marker-455pj             10m (2%)      0 (0%)      15Mi (0%)        0 (0%)         27m
+  openshift-dns               node-resolver-npm5t             5m (1%)       0 (0%)      21Mi (0%)        0 (0%)         27m
+  openshift-multus            multus-m992h                    10m (2%)      0 (0%)      65Mi (0%)        0 (0%)         27m
+  openshift-multus            network-metrics-daemon-7m4fk    20m (4%)      0 (0%)      120Mi (1%)       0 (0%)         27m
+  openshift-ovn-kubernetes    ovnkube-node-mmzf5              50m (10%)     0 (0%)      660Mi (10%)      0 (0%)         27m
+  openshift-vsphere-infra     coredns-rhel-node-1             200m (40%)    0 (0%)      400Mi (6%)       0 (0%)         27m
+  openshift-vsphere-infra     keepalived-rhel-node-1          200m (40%)    0 (0%)      400Mi (6%)       0 (0%)         26m
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests      Limits
+  --------           --------      ------
+  cpu                495m (99%)    0 (0%)
+  memory             1681Mi (25%)  0 (0%)
+  ephemeral-storage  0 (0%)        0 (0%)
+  hugepages-1Gi      0 (0%)        0 (0%)
+  hugepages-2Mi      0 (0%)        0 (0%)
+Events:
+  Type     Reason                Age                 From             Message
+  ----     ------                ----                ----             -------
+  Warning  ErrorReconcilingNode  27m                 controlplane     nodeAdd: error adding node "rhel-node-1": could not find "k8s.ovn.org/node-subnets" annotation
+  Normal   RegisteredNode        27m                 node-controller  Node rhel-node-1 event: Registered Node rhel-node-1 in Controller
+  Warning  ErrorReconcilingNode  23m (x22 over 27m)  controlplane     [k8s.ovn.org/node-chassis-id annotation not found for node rhel-node-1, macAddress annotation not found for node "rhel-node-1" , k8s.ovn.org/l3-gateway-config annotation not found for node "rhel-node-1"]
+  Warning  ErrorReconcilingNode  23m                 controlplane     error creating gateway for node rhel-node-1: failed to init shared interface gateway: failed to create MAC Binding for dummy nexthop rhel-node-1: error getting datapath GR_rhel-node-1: object not found
+  ```
+
 
 
 # References
