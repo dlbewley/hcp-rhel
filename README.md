@@ -103,12 +103,16 @@ Can none be used to form an exclusively RHEL worker node cluster?
 
 * [x] Deploy a OCP 4.13 platform=vSphere cluster
 * [x] Deploy a [RHEL9 VM](rhel-vm/overlays/ocp-node)
-* [ ] Add as worker to OCP
+* [x] Add as worker to OCP
   * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `cri-tools` and more importantly does not match the cluster OS.
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18557>
   * **Workaround** The playbook does not account for RHEL9. Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18558>
   * **Failure** Bootstrap ignition attempts to fetch from api-int which is not resolvable.
+  * **Workaround** Force `api` endpoint
+  * **Success** Node joins cluster and is Ready
+* [ ] Schedule workload to RHEL worker
+  * **Failure** Node joins cluster and is Ready but network is not fully initialized so node is tainted
 
 # Hosted Control Plane Prerequisites
 
