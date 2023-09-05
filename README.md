@@ -104,7 +104,7 @@ Can none be used to form an exclusively RHEL worker node cluster?
 * [x] Deploy a OCP 4.13 platform=vSphere cluster
 * [x] Deploy a [RHEL9 VM](rhel-vm/overlays/ocp-node)
 * [ ] Add as worker to OCP
-  * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `crio-tools` and more importantly does not match the cluster OS.
+  * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `cri-tools` and more importantly does not match the cluster OS.
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18557>
   * **Workaround** The playbook does not account for RHEL9. Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18558>
@@ -399,7 +399,7 @@ fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"msg": "The task includes an op
 
 * Retry with above workaround.
 
-* **Failed** to download the machineconfig. Not sure why it used api-int instead of api. TBD
+* **Failed** to download the machineconfig. 
 
 ```
 
@@ -409,10 +409,97 @@ FAILED - RETRYING: [rhel-node-1.lab.bewley.net]: Fetch bootstrap ignition file l
 fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"attempts": 60, "changed": false, "elapsed": 0, "msg": "Status code was -1 and not [200]: Request failed: <urlopen error [Errno -2] Name or service not known>", "redirected": false, "status": -1, "url": "https://api-int.hub.lab.bewley.net:22623/config/worker"}
 ```
 
-Need to investigate ignition fetching from api-int which is not resolvable.
-
   * Task is here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/tasks/config.yml#L70-L83>
   * Vars are here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L6-L10>
+
+  * **Workaround** Apply this patch to stop forcing api-int.<cluster-domain>, and force api.<cluster-domain>.
+
+```diff
+--- openshift-ansible/roles/openshift_node/defaults/main.yml.orig       2023-07-14 03:07:17.000000000 -0400
++++ openshift-ansible/roles/openshift_node/defaults/main.yml    2023-09-05 14:16:31.487090591 -0400
+@@ -6,7 +6,7 @@
+ openshift_node_kubeconfig_path: "{{ openshift_kubeconfig_path | default('~/.kube/config') | expanduser | realpath }}"
+ openshift_node_kubeconfig: "{{ lookup('file', openshift_node_kubeconfig_path) | from_yaml }}"
+ openshift_node_bootstrap_port: 22623
+-openshift_node_bootstrap_server: "{{ openshift_node_kubeconfig.clusters.0.cluster.server.split(':')[0:-1] | join(':') | regex_replace('://api-int|://api', '://api-int') }}:{{ openshift_node_bootstrap_port }}"
++openshift_node_bootstrap_server: "{{ openshift_node_kubeconfig.clusters.0.cluster.server.split(':')[0:-1] | join(':') | regex_replace('://api-int|://api', '://api') }}:{{ openshift_node_bootstrap_port }}"
+ openshift_node_bootstrap_endpoint: "{{ openshift_node_bootstrap_server }}/config/{{ openshift_node_machineconfigpool }}"
+ openshift_package_directory: '/tmp/openshift-ansible-packages'
+
+@@ -85,6 +85,7 @@
+   "8":
+     - openvswitch2.17
+     - policycoreutils-python-utils
++  "9": []
+
+ openshift_conflict_packages:
+   - openvswitch
+```
+
+* Retry with above workaround got farther, but failed to apply bootstrap ignition due to missing openvswitch service.
+
+```
+TASK [openshift_node : Apply ignition manifest] **********************************************
+...
+ "F0905 14:23:42.499261   39224 start.go:104] error enabling units: Failed to enable unit: Unit file openvswitch.service does not exist."]}
+```
+
+  * **Workaround** Update diff to include openvswitch pkgs compatible with OCP 4.13 and RHEL9
+
+```diff
+--- /usr/share/ansible/openshift-ansible/roles/openshift_node/defaults/main.yml.orig    2023-07-14 03:07:17.000000000 -0400
++++ /usr/share/ansible/openshift-ansible/roles/openshift_node/defaults/main.yml 2023-09-05 14:32:33.161233539 -0400
+@@ -6,7 +6,7 @@
+ openshift_node_kubeconfig_path: "{{ openshift_kubeconfig_path | default('~/.kube/config') | expanduser | realpath }}"
+ openshift_node_kubeconfig: "{{ lookup('file', openshift_node_kubeconfig_path) | from_yaml }}"
+ openshift_node_bootstrap_port: 22623
+-openshift_node_bootstrap_server: "{{ openshift_node_kubeconfig.clusters.0.cluster.server.split(':')[0:-1] | join(':') | regex_replace('://api-int|://api', '://api-int') }}:{{ openshift_node_bootstrap_port }}"
++openshift_node_bootstrap_server: "{{ openshift_node_kubeconfig.clusters.0.cluster.server.split(':')[0:-1] | join(':') | regex_replace('://api-int|://api', '://api') }}:{{ openshift_node_bootstrap_port }}"
+ openshift_node_bootstrap_endpoint: "{{ openshift_node_bootstrap_server }}/config/{{ openshift_node_machineconfigpool }}"
+ openshift_package_directory: '/tmp/openshift-ansible-packages'
+
+@@ -85,6 +85,9 @@
+   "8":
+     - openvswitch2.17
+     - policycoreutils-python-utils
++  "9":
++    - openvswitch3.1
++    - policycoreutils-python-utils
+
+ openshift_conflict_packages:
+   - openvswitch
+```
+
+* Rerun with above workaround. 
+
+```
+[ansible@rhel-node-1 openshift-ansible]$ cd /usr/share/ansible/openshift-ansible
+[ansible@rhel-node-1 openshift-ansible]$ ansible-playbook -c local -i /home/ansible/inventory/hosts playbooks/scaleup.yml
+...
+TASK [openshift_node : Pull MCD image] ************************************************************************************************************************
+changed: [rhel-node-1.lab.bewley.net]
+
+TASK [openshift_node : Apply ignition manifest] ***************************************************************************************************************
+changed: [rhel-node-1.lab.bewley.net]
+
+TASK [openshift_node : Remove temp directory] *****************************************************************************************************************
+changed: [rhel-node-1.lab.bewley.net]
+
+TASK [openshift_node : Reboot the host and wait for it to come back] ******************************************************************************************
+fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"changed": false, "elapsed": 0, "msg": "Running reboot with local connection would reboot the control node.", "rebooted": false}
+
+TASK [openshift_node : fail] **********************************************************************************************************************************
+fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"changed": false, "msg": "Ignition apply failed"}
+
+PLAY RECAP ****************************************************************************************************************************************************
+localhost                  : ok=1    changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0
+rhel-node-1.lab.bewley.net : ok=47   changed=20   unreachable=0    failed=1    skipped=6    rescued=1    ignored=0
+
+[ansible@rhel-node-1 openshift-ansible]$ uptime
+ 14:38:01 up 3 days, 19:43,  1 user,  load average: 2.67, 1.40, 0.71
+```
+
+**TODO** Running on Localhost may not actually work. Investigate above. TBD
 
 
 # References
