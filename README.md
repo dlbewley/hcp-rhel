@@ -498,8 +498,6 @@ rhel-node-1.lab.bewley.net : ok=47   changed=20   unreachable=0    failed=1    s
  14:38:01 up 3 days, 19:43,  1 user,  load average: 2.67, 1.40, 0.71
 ```
 
-<<<<<<< HEAD
-
 * **Workaround** Rebooted host by hand and did not re-run playbook nor check for any missing subsequent tasks.
 
 Manually approved 3 CSRs
@@ -639,6 +637,7 @@ Events:
   Normal   RegisteredNode        27m                 node-controller  Node rhel-node-1 event: Registered Node rhel-node-1 in Controller
   Warning  ErrorReconcilingNode  23m (x22 over 27m)  controlplane     [k8s.ovn.org/node-chassis-id annotation not found for node rhel-node-1, macAddress annotation not found for node "rhel-node-1" , k8s.ovn.org/l3-gateway-config annotation not found for node "rhel-node-1"]
   Warning  ErrorReconcilingNode  23m                 controlplane     error creating gateway for node rhel-node-1: failed to init shared interface gateway: failed to create MAC Binding for dummy nexthop rhel-node-1: error getting datapath GR_rhel-node-1: object not found
+<<<<<<< HEAD
 ```
 
 Maybe failure due to mixing platform=vsphere and a non-vmware guest?
@@ -646,6 +645,10 @@ Maybe failure due to mixing platform=vsphere and a non-vmware guest?
 Result: Not going to pursue this any further at this time.
 =======
 **TODO** Running on Localhost may not actually work. Investigate above. TBD
+=======
+  ```
+
+>>>>>>> 3cdf392 (RHEL node joined cluster)
 
 >>>>>>> a5b1444 (update rhel9 pkg to includ openvswitch3.1)
 
