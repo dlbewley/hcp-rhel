@@ -75,7 +75,7 @@ Can none be used to form an exclusively RHEL worker node cluster?
 
 ## Kubevirt HCP
 
-[Results]](#deploying-a-kubevirt-hostedcluster)
+[Results](#deploying-a-kubevirt-hostedcluster)
 
 * [x] Deploy a [platform=Kubervirt][13] HostedCluster
   * Success
@@ -105,7 +105,9 @@ Can none be used to form an exclusively RHEL worker node cluster?
 * [x] Deploy a [RHEL9 VM](rhel-vm/overlays/ocp-node)
 * [ ] Add as worker to OCP
   * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `crio-tools` and more importantly does not match the cluster OS.
+  * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18557>
   * **Workaround** The playbook does not account for RHEL9. Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
+  * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18558>
   * **Failure** Bootstrap ignition attempts to fetch from api-int which is not resolvable.
 
 # Hosted Control Plane Prerequisites
@@ -360,11 +362,12 @@ oc -n clusters patch hostedcluster/example --patch '{"spec":{"release":{"image":
 No match for argument: cri-tools
 Error: Unable to find a match: cri-tools
 ```
+
 That was because I was using RHEL8 per [the docs][6] however OCP 4.13 is based on RHEL 9.2.
 
-**TODO** File docs bug.
-
 * Workaround: Update repo names in [userData](rhel-vm/overlays/ocp-node/scripts/userData) 
+
+* Bug Filed <https://issues.redhat.com/browse/OCPBUGS-18557>
 
 * Retry with above workaround.
 
@@ -392,7 +395,7 @@ fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"msg": "The task includes an op
    - openvswitch
 ```
 
-**TODO** File playbook bug.
+* Bug filed <https://issues.redhat.com/browse/OCPBUGS-18558>
 
 * Retry with above workaround.
 
