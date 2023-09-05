@@ -102,7 +102,7 @@ Results - Did not test
 * [x] Deploy a OCP 4.13 platform=vSphere cluster
 * [x] Deploy a [RHEL9 VM](rhel-vm/overlays/ocp-node)
 * [ ] Add as worker to OCP
-  * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `crio-tools` and more importantly does not match the cluster OS.
+  * **Workaround** OCP 4.13 docs list RHEL8 yum repository names which lack `cri-tools` and more importantly does not match the cluster OS.
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18557>
   * **Workaround** The playbook does not account for RHEL9. Source <https://github.com/openshift/openshift-ansible/blob/master/roles/openshift_node/tasks/install.yml#L2-L6>
   * Bug filed <https://issues.redhat.com/browse/OCPBUGS-18558>
@@ -408,8 +408,6 @@ FAILED - RETRYING: [rhel-node-1.lab.bewley.net]: Fetch bootstrap ignition file l
 fatal: [rhel-node-1.lab.bewley.net]: FAILED! => {"attempts": 60, "changed": false, "elapsed": 0, "msg": "Status code was -1 and not [200]: Request failed: <urlopen error [Errno -2] Name or service not known>", "redirected": false, "status": -1, "url": "https://api-int.hub.lab.bewley.net:22623/config/worker"}
 ```
 
-Need to investigate ignition fetching from api-int which is not resolvable.
-
   * Task is here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/tasks/config.yml#L70-L83>
   * Vars are here <https://github.com/openshift/openshift-ansible/blob/release-4.13/roles/openshift_node/defaults/main.yml#L6-L10>
 
@@ -500,6 +498,7 @@ rhel-node-1.lab.bewley.net : ok=47   changed=20   unreachable=0    failed=1    s
  14:38:01 up 3 days, 19:43,  1 user,  load average: 2.67, 1.40, 0.71
 ```
 
+<<<<<<< HEAD
 
 * **Workaround** Rebooted host by hand and did not re-run playbook nor check for any missing subsequent tasks.
 
@@ -645,6 +644,10 @@ Events:
 Maybe failure due to mixing platform=vsphere and a non-vmware guest?
 
 Result: Not going to pursue this any further at this time.
+=======
+**TODO** Running on Localhost may not actually work. Investigate above. TBD
+
+>>>>>>> a5b1444 (update rhel9 pkg to includ openvswitch3.1)
 
 # References
 
