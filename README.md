@@ -80,13 +80,11 @@ Can none be used to form an exclusively RHEL worker node cluster?
 * [x] Deploy a [platform=Kubervirt][13] HostedCluster
   * Success
 * [-] Add a [RHEL VM](rhel-vm/overlays/hcp-node) to `Kubevirt` cluster
-  * **Failure** - Not possible, due to lack of Machine Config Operator on HostedClusters
+  * **Failure** - Not possible, due to lack of Machine Config Operator on HostedClusters. [CAPI][14] is used instead.
 
 ## None HCP
 
-* [x] Skipping this test
-
-[Results](#deploying-a-none-hostedcluster)
+Results - Did not test
 
 * [-] Deploy a [platform=None][4] HostedCluster
   * TBD
@@ -95,7 +93,7 @@ Can none be used to form an exclusively RHEL worker node cluster?
 
 ## Agent HCP
 
-* [x] Skipping this test
+* Results - Did not test
 
 ## Standalone Control Plane OCP
 
@@ -346,9 +344,6 @@ operator-lifecycle-manager-packageserver   4.13.10   True        False         F
 service-ca                                 4.13.10   True        False         False      40h
 storage                                    4.13.10   True        False         False      41h
 ```
-
-## Deploying a None HostedCluster
-### Adding a RHEL Node
 
 # Questions
 
@@ -643,8 +638,11 @@ Events:
   Normal   RegisteredNode        27m                 node-controller  Node rhel-node-1 event: Registered Node rhel-node-1 in Controller
   Warning  ErrorReconcilingNode  23m (x22 over 27m)  controlplane     [k8s.ovn.org/node-chassis-id annotation not found for node rhel-node-1, macAddress annotation not found for node "rhel-node-1" , k8s.ovn.org/l3-gateway-config annotation not found for node "rhel-node-1"]
   Warning  ErrorReconcilingNode  23m                 controlplane     error creating gateway for node rhel-node-1: failed to init shared interface gateway: failed to create MAC Binding for dummy nexthop rhel-node-1: error getting datapath GR_rhel-node-1: object not found
-  ```
+```
 
+Maybe failure due to mixing platform=vsphere and a non-vmware guest?
+
+Result: Not going to pursue this any further at this time.
 
 
 # References
@@ -662,3 +660,4 @@ Events:
 [11]: <https://pp.engineering.redhat.com/hypershift/overview/> "Engr HyperShift"
 [12]: <https://docs.openshift.com/container-platform/4.13/hosted_control_planes/hcp-managing.html>
 [13]: <https://hypershift-docs.netlify.app/how-to/kubevirt/create-kubevirt-cluster/>
+[14]: <https://cluster-api.sigs.k8s.io/>
