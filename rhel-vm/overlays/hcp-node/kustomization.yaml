@@ -1,14 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: ocp-rhel
-
-resources:
-  # - ../../base
-  - namespace.yaml
+namespace: clusters-example
 
 components:
-  - ../../components/rhel9
+  - ../../components/rhel8
   - ../../components/network
 
 # the inline json patch can not learn of the random suffix
@@ -19,10 +15,6 @@ secretGenerator:
   - name: cloudinitdisk-rhel-node
     files:
       - scripts/userData
-
-  - name: admin-kubeconfig
-    files:
-      - secrets/kubeconfig
 
 patches:
 - target:
@@ -50,7 +42,7 @@ patches:
     # note namespace in net-attach-def multus reference
     - op: replace
       path: /spec/template/spec/networks/0
-      value: {"name":"nic-vlan-1924","multus":{"networkName":"ocp-rhel/vlan-1924"}}
+      value: {"name":"nic-vlan-1924","multus":{"networkName":"clusters-example/vlan-1924"}}
 
     - op: replace
       path: /spec/template/spec/domain/devices/interfaces/0
