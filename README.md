@@ -498,7 +498,6 @@ rhel-node-1.lab.bewley.net : ok=47   changed=20   unreachable=0    failed=1    s
  14:38:01 up 3 days, 19:43,  1 user,  load average: 2.67, 1.40, 0.71
 ```
 
-
 * **Workaround** Rebooted host by hand and did not re-run playbook nor check for any missing subsequent tasks.
 
 Manually approved 3 CSRs
@@ -643,7 +642,6 @@ Events:
 Maybe failure due to mixing platform=vsphere and a non-vmware guest?
 
 Result: Not going to pursue this any further at this time.
-
 
 # References
 
